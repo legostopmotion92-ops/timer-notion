@@ -1,1 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aesthetic Precision Timer</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --card-border: #333333;
+            --accent: #38bdf8;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .timer-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            width: 320px;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 18px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .time-display {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .custom-input-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-input-row input {
+            background: #121212;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 6px;
+            border-radius: 6px;
+            width: 50px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .custom-input-row button {
+            background-color: #2a2a2a;
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .custom-input-row button:hover {
+            background-color: var(--accent);
+            color: #121212;
+            border-color: var(--accent);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .controls button {
+            background-color: #2a2a2a;
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .controls button:hover {
+            background-color: var(--accent);
+            color: #121212;
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<div class="timer-card">
+    <h2>Focus Timer</h2>
+    <div class="time-display" id="display">00:25:00</div>
+    
+    <div class="custom-input-row">
+        <input type="number" id="hours-input" placeholder="HH" min="0" max="23" value="0">
+        <input type="number" id="minutes-input" placeholder="MM" min="0" max="59" value="25">
+        <input type="number" id="seconds-input" placeholder="SS" min="0" max="59" value="0">
+        <button onclick="setCustomTime()">Set</button>
+    </div>
+
+    <div class="controls">
+        <button id="start-btn" onclick="toggleTimer()">Start</button>
+        <button onclick="resetTimer()">Reset</button>
+    </div>
+</div>
+
+<!-- Hooked up to your Chopper audio file -->
+<audio id="alarm-sound" src="chopper_eyecatcher.mp3" preload="auto"></audio>
+
+<script>
+    let totalSeconds = 25 * 60;
+    let remainingSeconds = totalSeconds;
+    let timerInterval = null;
+    let isRunning = false;
+
+    const display = document.getElementById('display');
+    const startBtn = document.getElementById('start-btn');
+    const hoursInput = document.getElementById('hours-input');
+    const minutesInput = document.getElementById('minutes-input');
+    const secondsInput = document.getElementById('seconds-input');
+    const alarmSound = document.getElementById('alarm-sound');
+
+    function updateDisplay() {
+        const hours = Math.floor(remainingSeconds / 3600);
+        const minutes = Math.floor((remainingSeconds % 3600) / 60);
+        const seconds = remainingSeconds % 60;
+        
+        display.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            startBtn.textContent = "Start";
+            isRunning = false;
+        } else {
+            if (remainingSeconds <= 0) return;
+            startBtn.textContent = "Pause";
+            isRunning = true;
+            
+            timerInterval = setInterval(() => {
+                if (remainingSeconds > 0) {
+                    remainingSeconds--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    startBtn.textContent = "Start";
+                    playAlarm();
+                }
+            }, 1000);
+        }
+    }
+
+    function setCustomTime() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        startBtn.textContent = "Start";
+        
+        const hrs = parseInt(hoursInput.value) || 0;
+        const mins = parseInt(minutesInput.value) || 0;
+        const secs = parseInt(secondsInput.value) || 0;
+        
+        totalSeconds = (hrs * 3600) + (mins * 60) + secs;
+        remainingSeconds = totalSeconds;
+        updateDisplay();
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        startBtn.textContent = "Start";
+        remainingSeconds = totalSeconds;
+        updateDisplay();
+    }
+
+    function playAlarm() {
+        alarmSound.currentTime = 0; 
+        alarmSound.play().catch(error => {
+            console.log("Audio play failed (browser restriction): ", error);
+        });
+    }
+
+    updateDisplay();
+</script>
+
+</body>
+</html>
